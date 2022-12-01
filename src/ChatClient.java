@@ -9,13 +9,15 @@ class MessageSender implements Runnable {
     private String hostName;
     private ClientWindow window;
     private MessageReceiver receiver;
+    private String join;
 
-    MessageSender(DatagramSocket sock, String host, ClientWindow win, MessageReceiver receive, int port) {
+    MessageSender(DatagramSocket sock, String host, ClientWindow win, MessageReceiver receive, int port, String join) {
         socket = sock;
         hostName = host;
         window = win;
         receiver = receive;
         portNo = port;
+        this.join = join;
     }
 
     private void sendMessage(String s) throws Exception {
@@ -28,7 +30,7 @@ class MessageSender implements Runnable {
     public void run() {
         boolean connected = false;
         try {
-            sendMessage("Connection to the Message Board Server is successful!");
+            sendMessage(join);
             connected = true;
         } catch (Exception e) {
             System.out.println("Error: Connection to the Message Board Server has failed! Please check IP Address and Port Number.");
@@ -36,16 +38,17 @@ class MessageSender implements Runnable {
         }
 
         while (!connected) {
-            System.out.print("Enter /join command: ");
+            System.out.print("Enter /join <server_ip_add> <port> command: ");
             Scanner sc = new Scanner(System.in);
             String temp;
             do {
                 temp = sc.nextLine();
                 if (!temp.startsWith("/join ")) {
                     System.out.println("Error: Command not found.");
-                    System.out.print("Enter /join command: ");
+                    System.out.print("Enter /join <server_ip_add> <port> command: ");
                 }
             } while (!temp.startsWith("/join "));
+            String join = temp;
             temp = temp.substring(6);
             try {
                 hostName = temp.substring(0, temp.indexOf(' '));
@@ -59,14 +62,16 @@ class MessageSender implements Runnable {
             catch (Exception e) {
                 portNo = 0;
             }
-            System.out.println(hostName + " " + portNo + " " + temp + " " + temp.substring(temp.indexOf(' ')));
+            // test print
+            System.out.println(hostName + " " + portNo + " " + temp + " " + temp.substring(temp.indexOf(' ') + 1));
             try {
-                sendMessage("Connection to the Message Board Server is successful!");
-                connected = true;
                 window = new ClientWindow();
                 receiver.window = window;
+                sendMessage(join);
+                connected = true;
             } catch (Exception e) {
                 System.out.println("Error: Connection to the Message Board Server has failed! Please check IP Address and Port Number.");
+                window.dispose();
             }
         }
 
@@ -100,7 +105,7 @@ class MessageReceiver implements Runnable {
             try {
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 socket.receive(packet);
-                String received = new String(packet.getData(), 1, packet.getLength() - 1).trim();
+                String received = new String(packet.getData(), 0, packet.getLength()).trim();
                 System.out.println(received);
                 window.displayMessage(received);
             } catch (Exception e) {
@@ -115,18 +120,19 @@ public class ChatClient {
     public static void main(String args[]) throws Exception {
         System.out.println("Upon connecting to a server, GUI will open.");
         // Enter /join localhost 2020
-        System.out.print("Enter /join command: ");
+        System.out.print("Enter /join <server_ip_add> <port> command: ");
         Scanner sc = new Scanner(System.in);
         String temp;
         do {
             temp = sc.nextLine();
             if (!temp.startsWith("/join ")) {
                 System.out.println("Error: Command not found.");
-                System.out.print("Enter /join command: ");
+                System.out.print("Enter /join <server_ip_add> <port> command: ");
             }
         } while (!temp.startsWith("/join "));
         String hostName;
         int portNo;
+        String join = temp;
         temp = temp.substring(6);
         try {
             hostName = temp.substring(0, temp.indexOf(' '));
@@ -144,7 +150,7 @@ public class ChatClient {
         window.setTitle("Message Board Client");
         DatagramSocket socket = new DatagramSocket();
         MessageReceiver receiver = new MessageReceiver(socket, window);
-        MessageSender sender = new MessageSender(socket, hostName, window, receiver, portNo);
+        MessageSender sender = new MessageSender(socket, hostName, window, receiver, portNo, join);
         Thread receiverThread = new Thread(receiver);
         Thread senderThread = new Thread(sender);
         receiverThread.start();

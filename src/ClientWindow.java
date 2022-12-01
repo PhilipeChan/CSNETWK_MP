@@ -28,7 +28,7 @@ public class ClientWindow extends JFrame {
     public ClientWindow() {
 
         setSize(800, 600);
-        setTitle("UDP Chat room");
+        setTitle("Message Board Client");
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         room_field = new JTextPane();
