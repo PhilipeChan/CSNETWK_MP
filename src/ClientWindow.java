@@ -24,11 +24,12 @@ public class ClientWindow extends JFrame {
 
     String message = "";
     boolean message_is_ready = false;
+    String recentMessage = "";
 
     public ClientWindow() {
 
         setSize(800, 600);
-        setTitle("Message Board Client");
+        setTitle("Client Window");
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         room_field = new JTextPane();
@@ -72,6 +73,7 @@ public class ClientWindow extends JFrame {
     }
 
     public void displayMessage(String receivedMessage) {
+        recentMessage = receivedMessage;
         StyledDocument doc = room_field.getStyledDocument();
         try {
             doc.insertString(doc.getLength(), receivedMessage + "\n", null);

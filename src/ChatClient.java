@@ -27,13 +27,15 @@ class MessageSender implements Runnable {
         JSONObject json;
 
         try {
-            if (s.startsWith("/join") || s.startsWith("/leave") || s.startsWith("/register") ||
-                    s.startsWith("/all") || s.startsWith("/msg") || s.startsWith("/?")) {
+            if (s.startsWith("/join") || s.equals("/leave") || s.startsWith("/register") ||
+                    s.startsWith("/all") || s.startsWith("/msg") || s.equals("/?")) {
                 if (!s.equals("/leave") && !s.equals("/?"))
                     command = s.substring(1, s.indexOf(' '));
                 else
                     command = s.substring(1);
             }
+            else if ((s.startsWith("/leave ") && s.length() > 7) || (s.startsWith("/? ") && s.length() > 3))
+                command = "wrongparam";
             else
                 command = " ";
         }
@@ -51,7 +53,7 @@ class MessageSender implements Runnable {
                 handle = s.substring(10);
             }
             catch (Exception e){
-                handle = null;
+                handle = " ";
             }
 
             json = new JSONObject()
@@ -65,7 +67,7 @@ class MessageSender implements Runnable {
                 message = s.substring(5);
             }
             catch (Exception e){
-                message = null;
+                message = "";
             }
 
             json = new JSONObject()
@@ -82,7 +84,7 @@ class MessageSender implements Runnable {
                 handle = handle.substring(0, handle.indexOf(' '));
             }
             catch (Exception e){
-                handle = null;
+                handle = " ";
             }
 
             try {
@@ -90,7 +92,7 @@ class MessageSender implements Runnable {
                 message = message.substring(message.indexOf(' ') + 1);
             }
             catch (Exception e){
-                message = null;
+                message = "";
             }
 
             json = new JSONObject()
@@ -114,7 +116,14 @@ class MessageSender implements Runnable {
         boolean connected = false;
         try {
             sendMessage(join);
-            connected = true;
+            Thread.sleep(100);
+            if (receiver.joined) {
+                connected = true;
+            }
+            else {
+                System.out.println("Error: Connection to the Message Board Server has failed! Please check IP Address and Port Number.");
+                window.dispose();
+            }
         } catch (Exception e) {
             System.out.println("Error: Connection to the Message Board Server has failed! Please check IP Address and Port Number.");
             window.dispose();
@@ -134,7 +143,7 @@ class MessageSender implements Runnable {
                 }
 
                 else if (temp.startsWith("/register") || temp.startsWith("/all") || temp.startsWith("/msg")) {
-                    System.out.println("Error: Command parameters do not match or is not allowed.");
+                    System.out.println("Error: Command parameters do not match or is not allowed. Command not allowed in this case.");
                     System.out.print("Enter /join <server_ip_add> <port> command: ");
                 }
 
@@ -178,7 +187,14 @@ class MessageSender implements Runnable {
                 window = new ClientWindow();
                 receiver.window = window;
                 sendMessage(join);
-                connected = true;
+                Thread.sleep(100);
+                if (receiver.joined) {
+                    connected = true;
+                }
+                else {
+                    System.out.println("Error: Connection to the Message Board Server has failed! Please check IP Address and Port Number.");
+                    window.dispose();
+                }
             } catch (Exception e) {
                 System.out.println("Error: Connection to the Message Board Server has failed! Please check IP Address and Port Number.");
                 window.dispose();
@@ -192,7 +208,7 @@ class MessageSender implements Runnable {
                 }
                 sendMessage(window.getMessage());
                 window.setMessageReady(false);
-                if (window.getMessage().length() == 6 && window.getMessage().startsWith("/leave")) {
+                if (window.getMessage().length() == 6 && window.getMessage().equals("/leave")) {
                     connected = false;
                     hostName = " ";
                     portNo = 0;
@@ -212,7 +228,7 @@ class MessageSender implements Runnable {
                             }
 
                             else if (temp.startsWith("/register") || temp.startsWith("/all") || temp.startsWith("/msg")) {
-                                System.out.println("Error: Command parameters do not match or is not allowed.");
+                                System.out.println("Error: Command parameters do not match or is not allowed. Command not allowed in this case.");
                                 System.out.print("Enter /join <server_ip_add> <port> command: ");
                             }
 
@@ -256,7 +272,14 @@ class MessageSender implements Runnable {
                             window = new ClientWindow();
                             receiver.window = window;
                             sendMessage(join);
-                            connected = true;
+                            Thread.sleep(100);
+                            if (receiver.joined) {
+                                connected = true;
+                            }
+                            else {
+                                System.out.println("Error: Connection to the Message Board Server has failed! Please check IP Address and Port Number.");
+                                window.dispose();
+                            }
                         } catch (Exception e) {
                             System.out.println("Error: Connection to the Message Board Server has failed! Please check IP Address and Port Number.");
                             window.dispose();
@@ -264,7 +287,7 @@ class MessageSender implements Runnable {
                     }
                 }
 
-                else if (window.getMessage().length() == 2 && window.getMessage().startsWith("/?")) {
+                else if (window.getMessage().length() == 2 && window.getMessage().equals("/?")) {
                     System.out.println("\n---------------------------------------------------------\n" +
                             "Connect to the server application: /join <server_ip_add> <port>\n" +
                             "Disconnect to the server application: /leave\n" +
@@ -285,6 +308,7 @@ class MessageReceiver implements Runnable {
     DatagramSocket socket;
     byte buffer[];
     ClientWindow window;
+    boolean joined = false;
 
     MessageReceiver(DatagramSocket sock, ClientWindow win) {
         socket = sock;
@@ -302,10 +326,12 @@ class MessageReceiver implements Runnable {
                 String command = received.getString("command");
 
                 if (command.equals("join")) {
+                    joined = true;
                     window.displayMessage("Connection to the Message Board Server is successful!");
                 }
 
                 else if (command.equals("leave")) {
+                    joined = false;
                     window.displayMessage("Connection closed. Thank you!");
                 }
 
@@ -317,12 +343,8 @@ class MessageReceiver implements Runnable {
                     window.displayMessage(received.getString("handle") + ": " + received.getString("message"));
                 }
 
-                else if (command.equals("msgfrom")) {
-                    window.displayMessage("[From " + received.getString("handle") + "]: " + received.getString("message"));
-                }
-
-                else if (command.equals("msgto")) {
-                    window.displayMessage("[To " + received.getString("handle") + "]: " + received.getString("message"));
+                else if (command.equals("msg")) {
+                    window.displayMessage(received.getString("message"));
                 }
 
                 else if (command.equals("?")) {
@@ -358,7 +380,7 @@ public class ChatClient {
             }
 
             else if (temp.startsWith("/register") || temp.startsWith("/all") || temp.startsWith("/msg")) {
-                System.out.println("Error: Command parameters do not match or is not allowed.");
+                System.out.println("Error: Command parameters do not match or is not allowed. Command not allowed in this case.");
                 System.out.print("Enter /join <server_ip_add> <port> command: ");
             }
 
@@ -401,7 +423,7 @@ public class ChatClient {
             portNo = 0;
         }
         ClientWindow window = new ClientWindow();
-        window.setTitle("Message Board Client");
+        window.setTitle("Client Window");
         DatagramSocket socket = new DatagramSocket();
         MessageReceiver receiver = new MessageReceiver(socket, window);
         MessageSender sender = new MessageSender(socket, hostName, window, receiver, portNo, join);

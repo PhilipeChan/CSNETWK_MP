@@ -5,7 +5,7 @@ import java.net.*;
 import java.util.*;
 
 public class ChatServer implements  Runnable {
-    public final static int PORT = 2020;
+    public final static int PORT = 12345;
     private final static int BUFFER = 1024;
 
     private DatagramSocket socket;
@@ -55,9 +55,7 @@ public class ChatServer implements  Runnable {
                 String id = clientAddress.toString().substring(1) + "|" + client_port;
                 if (!existing_address_ports.contains(id)) {
                     existing_address_ports.add(id);
-                    existing_clients.add(new Client(id, id));
-                    client_ports.add(client_port);
-                    client_addresses.add(clientAddress);
+                    existing_clients.add(new Client(id, " "));
                 }
 
                 JSONObject toSend;
@@ -68,7 +66,8 @@ public class ChatServer implements  Runnable {
                     joined_clients.add(id);
                     System.out.println("Connection to the Message Board Server is successful!");
                     toSend = new JSONObject()
-                            .put("command", command);
+                            .put("command", command)
+                            .put("message", "Connection to the Message Board Server is successful!");
                     byte[] data = toSend.toString().getBytes();
                     packet = new DatagramPacket(data, data.length, clientAddress, client_port);
                     socket.send(packet);
@@ -86,9 +85,26 @@ public class ChatServer implements  Runnable {
 
                 else if (command.equals("leave")) {
                     joined_clients.remove(id);
+                    for (int i = 0; i < existing_clients.size(); i++) {
+                        if (existing_clients.get(i).address_port.equals(id)) {
+                            if (!existing_clients.get(i).handle.equals(" ")) {
+                                client_ports.remove((Integer) client_port);
+                                client_addresses.remove(clientAddress);
+                            }
+                            break;
+                        }
+                    }
+                    existing_address_ports.remove(id);
+                    for (int i = 0; i < existing_clients.size(); i++) {
+                        if (existing_clients.get(i).address_port.equals(id)) {
+                            existing_clients.remove(i);
+                            break;
+                        }
+                    }
                     System.out.println("Connection closed. Thank you!");
                     toSend = new JSONObject()
-                            .put("command", command);
+                            .put("command", command)
+                            .put("message", "Connection closed. Thank you!");
                     byte[] data = toSend.toString().getBytes();
                     packet = new DatagramPacket(data, data.length, clientAddress, client_port);
                     socket.send(packet);
@@ -96,6 +112,8 @@ public class ChatServer implements  Runnable {
 
                 else if (command.equals("register")) {
                     boolean taken = false;
+                    boolean alreadyHas = false;
+                    boolean space = false;
 
                     for (int i = 0; i < existing_clients.size(); i++) {
                         if (existing_clients.get(i).handle.equals(message.getString("handle"))) {
@@ -103,15 +121,27 @@ public class ChatServer implements  Runnable {
                         }
                     }
 
-                    if (message.getString("handle").contains(" "))
-                        taken = true;
+                    String handle = " ";
+                    for (int i = 0; i < existing_clients.size(); i++) {
+                        if (existing_clients.get(i).address_port.equals(id)) {
+                            handle = existing_clients.get(i).handle;
+                            break;
+                        }
+                    }
+                    if (!handle.equals(" "))
+                        alreadyHas = true;
 
-                    if (!taken) {
+                    if (message.getString("handle").contains(" "))
+                        space = true;
+
+                    if (!taken && !space && !alreadyHas) {
                         for (int i = 0; i < existing_clients.size(); i++) {
                             if (existing_clients.get(i).address_port.equals(id)) {
                                 existing_clients.get(i).handle = message.getString("handle");
                             }
                         }
+                        client_ports.add(client_port);
+                        client_addresses.add(clientAddress);
                         System.out.println("Welcome " + message.getString("handle") + "!");
                         toSend = new JSONObject()
                                 .put("command", command)
@@ -121,11 +151,31 @@ public class ChatServer implements  Runnable {
                         socket.send(packet);
                     }
 
-                    else {
-                        System.out.println("Error: Registration failed. Handle or alias already exists. Make sure you have no spaces in the handle.");
+                    else if (taken){
+                        System.out.println("Error: Registration failed. Handle or alias already exists.");
                         toSend = new JSONObject()
                                 .put("command", "error")
-                                .put("message", "Error: Registration failed. Handle or alias already exists. Make sure you have no spaces in the handle.");
+                                .put("message", "Error: Registration failed. Handle or alias already exists.");
+                        byte[] data = toSend.toString().getBytes();
+                        packet = new DatagramPacket(data, data.length, clientAddress, client_port);
+                        socket.send(packet);
+                    }
+
+                    else if (space){
+                        System.out.println("Error: Registration failed. Make sure you have no spaces in the handle.");
+                        toSend = new JSONObject()
+                                .put("command", "error")
+                                .put("message", "Error: Registration failed. Make sure you have no spaces in the handle.");
+                        byte[] data = toSend.toString().getBytes();
+                        packet = new DatagramPacket(data, data.length, clientAddress, client_port);
+                        socket.send(packet);
+                    }
+
+                    else if (alreadyHas) {
+                        System.out.println("Error: Registration failed. You already have a handle.");
+                        toSend = new JSONObject()
+                                .put("command", "error")
+                                .put("message", "Error: Registration failed. You already have a handle.");
                         byte[] data = toSend.toString().getBytes();
                         packet = new DatagramPacket(data, data.length, clientAddress, client_port);
                         socket.send(packet);
@@ -133,109 +183,137 @@ public class ChatServer implements  Runnable {
                 }
 
                 else if (command.equals("all")) {
-                    String msg = message.getString("message");
-                    if (msg == null) {
-                        System.out.println("Error: Command parameters do not match or is not allowed.");
+                    String handle = " ";
+                    for (int i = 0; i < existing_clients.size(); i++) {
+                        if (existing_clients.get(i).address_port.equals(id)) {
+                            handle = existing_clients.get(i).handle;
+                            break;
+                        }
+                    }
+                    if (!handle.equals(" ")) {
+                        String msg = message.getString("message");
+                        if (msg.equals("")) {
+                            System.out.println("Error: Command parameters do not match or is not allowed.");
+                            toSend = new JSONObject()
+                                    .put("command", "error")
+                                    .put("message", "Error: Command parameters do not match or is not allowed.");
+                            byte[] data = toSend.toString().getBytes();
+                            packet = new DatagramPacket(data, data.length, clientAddress, client_port);
+                            socket.send(packet);
+                        } else {
+                            msg = msg.trim();
+                            String name = " ";
+                            for (int i = 0; i < existing_clients.size(); i++) {
+                                if (existing_clients.get(i).address_port.equals(id)) {
+                                    name = existing_clients.get(i).handle;
+                                }
+                            }
+                            System.out.println(name + ": " + msg);
+                            toSend = new JSONObject()
+                                    .put("command", command)
+                                    .put("handle", name)
+                                    .put("message", msg);
+                            byte[] data = toSend.toString().getBytes();
+                            for (int i = 0; i < client_addresses.size(); i++) {
+                                InetAddress cl_address = client_addresses.get(i);
+                                int cl_port = client_ports.get(i);
+                                packet = new DatagramPacket(data, data.length, cl_address, cl_port);
+                                socket.send(packet);
+                            }
+                        }
+                    }
+                    else {
+                        System.out.println("Error: Command parameters do not match or is not allowed. Register first.");
                         toSend = new JSONObject()
                                 .put("command", "error")
-                                .put("message", "Error: Command parameters do not match or is not allowed.");
+                                .put("message", "Error: Command parameters do not match or is not allowed. Register first.");
                         byte[] data = toSend.toString().getBytes();
                         packet = new DatagramPacket(data, data.length, clientAddress, client_port);
                         socket.send(packet);
-                    }
-                    else {
-                        msg = msg.trim();
-                        String name = " ";
-                        for (int i = 0; i < existing_clients.size(); i++) {
-                            if (existing_clients.get(i).address_port.equals(id)) {
-                                name = existing_clients.get(i).handle;
-                            }
-                        }
-                        System.out.println(name + ": " + msg);
-                        toSend = new JSONObject()
-                                .put("command", command)
-                                .put("handle", name)
-                                .put("message", msg);
-                        byte[] data = toSend.toString().getBytes();
-                        for (int i = 0; i < client_addresses.size(); i++) {
-                            InetAddress cl_address = client_addresses.get(i);
-                            int cl_port = client_ports.get(i);
-                            packet = new DatagramPacket(data, data.length, cl_address, cl_port);
-                            socket.send(packet);
-                        }
                     }
                 }
 
                 else if (command.equals("msg")) {
-                    String msg = message.getString("message");
-                    if (msg == null) {
-                        System.out.println("Error: Command parameters do not match or is not allowed.");
-                        toSend = new JSONObject()
-                                .put("command", "error")
-                                .put("message", "Error: Command parameters do not match or is not allowed.");
-                        byte[] data = toSend.toString().getBytes();
-                        packet = new DatagramPacket(data, data.length, clientAddress, client_port);
-                        socket.send(packet);
+                    String handle = " ";
+                    for (int i = 0; i < existing_clients.size(); i++) {
+                        if (existing_clients.get(i).address_port.equals(id)) {
+                            handle = existing_clients.get(i).handle;
+                            break;
+                        }
                     }
-                    else {
-                        msg = msg.trim();
-                        boolean invalid = true;
-                        String namefrom = " ";
-                        String nameto = message.getString("handle");
-                        InetAddress cl_addressfrom = clientAddress;
-                        int cl_portfrom = client_port;
-                        for (int i = 0; i < existing_clients.size(); i++) {
-                            if (existing_clients.get(i).handle.equals(nameto)) {
-                                String address_port = existing_clients.get(i).address_port;
-                                try {
-                                    cl_addressfrom = InetAddress.getByName(address_port.substring(0, address_port.indexOf("|")));
-                                }
-                                catch (Exception e) {
-                                    invalid = true;
-                                }
-                                try {
-                                    cl_portfrom = Integer.parseInt(address_port.substring(address_port.indexOf("|") + 1));
-                                }
-                                catch (Exception e) {
-                                    invalid = true;
-                                }
-                                invalid = false;
-                            }
-                        }
-                        for (int i = 0; i < existing_clients.size(); i++) {
-                            if (existing_clients.get(i).address_port.equals(id)) {
-                                namefrom = existing_clients.get(i).handle;
-                            }
-                        }
-
-                        if (!invalid) {
-                            System.out.println("[From " + namefrom + "]: " + msg);
-                            System.out.println("[To " + nameto + "]: " + msg);
-                            toSendfrom = new JSONObject()
-                                    .put("command", "msgfrom")
-                                    .put("handle", namefrom)
-                                    .put("message", msg);
-                            toSendto = new JSONObject()
-                                    .put("command", "msgto")
-                                    .put("handle", nameto)
-                                    .put("message", msg);
-                            byte[] datafrom = toSendfrom.toString().getBytes();
-                            byte[] datato = toSendto.toString().getBytes();
-                            packet = new DatagramPacket(datafrom, datafrom.length, cl_addressfrom, cl_portfrom);
-                            socket.send(packet);
-                            packet = new DatagramPacket(datato, datato.length, clientAddress, client_port);
-                            socket.send(packet);
-                        }
-
-                        else {
-                            System.out.println("Error: Handle or alias not found.");
+                    if (!handle.equals(" ")) {
+                        String msg = message.getString("message");
+                        if (msg.equals("")) {
+                            System.out.println("Error: Command parameters do not match or is not allowed.");
                             toSend = new JSONObject()
                                     .put("command", "error")
-                                    .put("message", "Error: Handle or alias not found.");
+                                    .put("message", "Error: Command parameters do not match or is not allowed.");
                             byte[] data = toSend.toString().getBytes();
                             packet = new DatagramPacket(data, data.length, clientAddress, client_port);
                             socket.send(packet);
+                        } else {
+                            msg = msg.trim();
+                            boolean invalid = true;
+                            String namefrom = " ";
+                            String nameto = message.getString("handle");
+                            InetAddress cl_addressfrom = clientAddress;
+                            int cl_portfrom = client_port;
+                            for (int i = 0; i < existing_clients.size(); i++) {
+                                if (existing_clients.get(i).handle.equals(nameto)) {
+                                    String address_port = existing_clients.get(i).address_port;
+                                    try {
+                                        cl_addressfrom = InetAddress.getByName(address_port.substring(0, address_port.indexOf("|")));
+                                    } catch (Exception e) {
+                                        invalid = true;
+                                    }
+                                    try {
+                                        cl_portfrom = Integer.parseInt(address_port.substring(address_port.indexOf("|") + 1));
+                                    } catch (Exception e) {
+                                        invalid = true;
+                                    }
+                                    invalid = false;
+                                }
+                            }
+                            for (int i = 0; i < existing_clients.size(); i++) {
+                                if (existing_clients.get(i).address_port.equals(id)) {
+                                    namefrom = existing_clients.get(i).handle;
+                                }
+                            }
+
+                            if (!invalid) {
+                                System.out.println("[From " + namefrom + "]: " + msg);
+                                System.out.println("[To " + nameto + "]: " + msg);
+                                toSendfrom = new JSONObject()
+                                        .put("command", "msg")
+                                        .put("message", "[From " + namefrom + "]: " + msg);
+                                toSendto = new JSONObject()
+                                        .put("command", "msg")
+                                        .put("message", "[To " + nameto + "]: " + msg);
+                                byte[] datafrom = toSendfrom.toString().getBytes();
+                                byte[] datato = toSendto.toString().getBytes();
+                                packet = new DatagramPacket(datafrom, datafrom.length, cl_addressfrom, cl_portfrom);
+                                socket.send(packet);
+                                packet = new DatagramPacket(datato, datato.length, clientAddress, client_port);
+                                socket.send(packet);
+                            } else {
+                                System.out.println("Error: Wrong parameters, or handle or alias not found.");
+                                toSend = new JSONObject()
+                                        .put("command", "error")
+                                        .put("message", "Error: Wrong parameters, or handle or alias not found.");
+                                byte[] data = toSend.toString().getBytes();
+                                packet = new DatagramPacket(data, data.length, clientAddress, client_port);
+                                socket.send(packet);
+                            }
                         }
+                    }
+                    else {
+                        System.out.println("Error: Command parameters do not match or is not allowed. Register first.");
+                        toSend = new JSONObject()
+                                .put("command", "error")
+                                .put("message", "Error: Command parameters do not match or is not allowed. Register first.");
+                        byte[] data = toSend.toString().getBytes();
+                        packet = new DatagramPacket(data, data.length, clientAddress, client_port);
+                        socket.send(packet);
                     }
                 }
 
