@@ -28,7 +28,7 @@ class MessageSender implements Runnable {
 
         try {
             if (s.startsWith("/join") || s.equals("/leave") || s.startsWith("/register") ||
-                    s.startsWith("/all") || s.startsWith("/msg") || s.equals("/?") || s.equals("/list")) {
+                    s.startsWith("/all") || s.startsWith("/msg") || s.equals("/?")) {
                 if (!s.equals("/leave") && !s.equals("/?"))
                     command = s.substring(1, s.indexOf(' '));
                 else
@@ -147,7 +147,9 @@ class MessageSender implements Runnable {
                 }
 
                 else if (temp.equals("/?")) {
-                    System.out.println("\n---------------------------------------------------------\n" +
+                    System.out.println("\n---------------------------------------------------------\n"+
+                            "                           COMMANDS" +
+                            "\n---------------------------------------------------------\n" +
                             "Connect to the server application: /join <server_ip_add> <port>\n" +
                             "Disconnect to the server application: /leave\n" +
                             "Register a unique handle or alias (NO SPACES): /register <handle>\n" +
@@ -232,7 +234,9 @@ class MessageSender implements Runnable {
                             }
 
                             else if (temp.equals("/?")) {
-                                System.out.println("\n---------------------------------------------------------\n" +
+                                System.out.println("\n---------------------------------------------------------\n"+
+                                        "                           COMMANDS" +
+                                        "\n---------------------------------------------------------\n" +
                                         "Connect to the server application: /join <server_ip_add> <port>\n" +
                                         "Disconnect to the server application: /leave\n" +
                                         "Register a unique handle or alias (NO SPACES): /register <handle>\n" +
@@ -287,7 +291,9 @@ class MessageSender implements Runnable {
                 }
 
                 else if (window.getMessage().length() == 2 && window.getMessage().equals("/?")) {
-                    System.out.println("\n---------------------------------------------------------\n" +
+                    System.out.println("\n---------------------------------------------------------\n"+
+                            "                           COMMANDS" +
+                            "\n---------------------------------------------------------\n" +
                             "Connect to the server application: /join <server_ip_add> <port>\n" +
                             "Disconnect to the server application: /leave\n" +
                             "Register a unique handle or alias (NO SPACES): /register <handle>\n" +
@@ -353,9 +359,6 @@ class MessageReceiver implements Runnable {
                 else if (command.equals("error")) {
                     window.displayMessage(command,received.getString("message"));
                 }
-                else if (command.equals("list")) {
-                    window.displayMessage(command, received.getString("message"));
-                }
 
             } catch (Exception e) {
                 System.err.println(e);
@@ -387,7 +390,9 @@ public class ChatClient {
             }
 
             else if (temp.equals("/?")) {
-                System.out.println("\n---------------------------------------------------------\n" +
+                System.out.println("\n---------------------------------------------------------\n"+
+                        "                           COMMANDS" +
+                        "\n---------------------------------------------------------\n" +
                         "Connect to the server application: /join <server_ip_add> <port>\n" +
                         "Disconnect to the server application: /leave\n" +
                         "Register a unique handle or alias (NO SPACES): /register <handle>\n" +

@@ -208,10 +208,10 @@ public class ChatServer implements  Runnable {
                                     name = existing_clients.get(i).handle;
                                 }
                             }
-                            System.out.println("[To All] " + name + ": " + msg);
+                            System.out.println(name + ": " + msg);
                             toSend = new JSONObject()
                                     .put("command", command)
-                                    .put("handle", "[To All] " + name)
+                                    .put("handle", name)
                                     .put("message", msg);
                             byte[] data = toSend.toString().getBytes();
                             for (int i = 0; i < client_addresses.size(); i++) {
