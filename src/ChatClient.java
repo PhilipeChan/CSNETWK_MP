@@ -28,7 +28,7 @@ class MessageSender implements Runnable {
 
         try {
             if (s.startsWith("/join") || s.equals("/leave") || s.startsWith("/register") ||
-                    s.startsWith("/all") || s.startsWith("/msg") || s.equals("/?")) {
+                    s.startsWith("/all") || s.startsWith("/msg") || s.equals("/?") || s.equals("/list")) {
                 if (!s.equals("/leave") && !s.equals("/?"))
                     command = s.substring(1, s.indexOf(' '));
                 else
@@ -100,7 +100,6 @@ class MessageSender implements Runnable {
                     .put("handle", handle)
                     .put("message", message);
         }
-
         else {
             json = new JSONObject()
                     .put("command", command);
@@ -298,7 +297,7 @@ class MessageSender implements Runnable {
                             "---------------------------------------------------------\n");
                 }
             } catch (Exception e) {
-                window.displayMessage(e.getMessage());
+                window.displayMessage("",e.getMessage());
             }
         }
     }
@@ -327,32 +326,35 @@ class MessageReceiver implements Runnable {
 
                 if (command.equals("join")) {
                     joined = true;
-                    window.displayMessage("Connection to the Message Board Server is successful!");
+                    window.displayMessage(command,"Connection to the Message Board Server is successful!");
                 }
 
                 else if (command.equals("leave")) {
                     joined = false;
-                    window.displayMessage("Connection closed. Thank you!");
+                    window.displayMessage(command,"Connection closed. Thank you!");
                 }
 
                 else if (command.equals("register")) {
-                    window.displayMessage("Welcome " + received.getString("handle") + "!");
+                    window.displayMessage(command,"Welcome " + received.getString("handle") + "!");
                 }
 
                 else if (command.equals("all")) {
-                    window.displayMessage(received.getString("handle") + ": " + received.getString("message"));
+                    window.displayMessage(command,received.getString("handle") + ": " + received.getString("message"));
                 }
 
                 else if (command.equals("msg")) {
-                    window.displayMessage(received.getString("message"));
+                    window.displayMessage(command,received.getString("message"));
                 }
 
                 else if (command.equals("?")) {
-                    window.displayMessage(received.getString("message"));
+                    window.displayMessage(command,received.getString("message"));
                 }
 
                 else if (command.equals("error")) {
-                    window.displayMessage(received.getString("message"));
+                    window.displayMessage(command,received.getString("message"));
+                }
+                else if (command.equals("list")) {
+                    window.displayMessage(command, received.getString("message"));
                 }
 
             } catch (Exception e) {

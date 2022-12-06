@@ -1,18 +1,11 @@
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.ScrollPane;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-
-import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
-import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
 @SuppressWarnings("serial")
@@ -30,6 +23,7 @@ public class ClientWindow extends JFrame {
 
         setSize(800, 600);
         setTitle("Client Window");
+
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         room_field = new JTextPane();
@@ -42,7 +36,9 @@ public class ClientWindow extends JFrame {
         z.setPreferredSize(new Dimension(100, 100));
         add(x, BorderLayout.CENTER);
         add(z, BorderLayout.SOUTH);
-
+        room_field.setBackground(Color.BLACK);
+        message_field.setBackground(Color.BLACK);
+        message_field.setForeground(Color.WHITE);
         setVisible(true);
         message_field.addKeyListener(new KeyListener() {
 
@@ -71,12 +67,34 @@ public class ClientWindow extends JFrame {
             }
         });
     }
-
-    public void displayMessage(String receivedMessage) {
+    public Style changeTextColor (String command, String message) {
+        Style style = message_field.addStyle("", null);
+        if(command.equals("join"))
+            StyleConstants.setForeground(style, Color.green);
+        else if(command.equals("leave"))
+            StyleConstants.setForeground(style, Color.green);
+        else if(command.equals("register"))
+            StyleConstants.setForeground(style, Color.green);
+        else if(command.equals("all"))
+            StyleConstants.setForeground(style, Color.white);
+        else if(command.equals("msg"))
+            StyleConstants.setForeground(style, Color.yellow);
+        else if(command.equals("?"))
+            StyleConstants.setForeground(style, Color.pink);
+        else if(command.equals("error"))
+            StyleConstants.setForeground(style, Color.red);
+        else if(command.equals("list"))
+            StyleConstants.setForeground(style, Color.white);
+        else
+            StyleConstants.setForeground(style, Color.white);
+        return style;
+    }
+    public void displayMessage(String command, String receivedMessage) {
         recentMessage = receivedMessage;
         StyledDocument doc = room_field.getStyledDocument();
+        Style style = changeTextColor(command, receivedMessage);
         try {
-            doc.insertString(doc.getLength(), receivedMessage + "\n", null);
+            doc.insertString(doc.getLength(), receivedMessage + "\n", style);
         } catch (BadLocationException e1) {
             e1.printStackTrace();
         }

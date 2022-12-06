@@ -208,10 +208,10 @@ public class ChatServer implements  Runnable {
                                     name = existing_clients.get(i).handle;
                                 }
                             }
-                            System.out.println(name + ": " + msg);
+                            System.out.println("[To All] " + name + ": " + msg);
                             toSend = new JSONObject()
                                     .put("command", command)
-                                    .put("handle", name)
+                                    .put("handle", "[To All] " + name)
                                     .put("message", msg);
                             byte[] data = toSend.toString().getBytes();
                             for (int i = 0; i < client_addresses.size(); i++) {
@@ -318,7 +318,9 @@ public class ChatServer implements  Runnable {
                 }
 
                 else if (command.equals("?")) {
-                    String help = "\n---------------------------------------------------------\n" +
+                    String help =   "\n---------------------------------------------------------\n"+
+                                    "                           COMMANDS" +
+                                    "\n---------------------------------------------------------\n" +
                             "Connect to the server application: /join <server_ip_add> <port>\n" +
                             "Disconnect to the server application: /leave\n" +
                             "Register a unique handle or alias (NO SPACES): /register <handle>\n" +
@@ -344,7 +346,6 @@ public class ChatServer implements  Runnable {
                     packet = new DatagramPacket(data, data.length, clientAddress, client_port);
                     socket.send(packet);
                 }
-
                 else {
                     System.out.println("Error: Command not found.");
                     toSend = new JSONObject()
